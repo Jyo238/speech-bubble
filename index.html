@@ -487,8 +487,10 @@ createApp({
         try{
           const f=new File([this._resultBlob], this.outName, {type:mime});
           if(navigator.canShare({files:[f]})){
-            await navigator.share({files:[f], title:this.outName});
-            this.status="已開分享面板，選「儲存"+(isVid?"影片":"圖片")+"」就能存進相簿。";
+            // 只分享純檔案，不能帶 title / text：iOS 一帶就視為多項目分享，
+            // 「儲存影片 / 儲存圖片」（存進照片 App）的選項會消失，只剩「儲存到檔案」
+            await navigator.share({files:[f]});
+            this.status="已開分享面板，選「儲存"+(isVid?"影片":"圖片")+"」就能存進照片。";
             return;
           }
         }catch(err){
