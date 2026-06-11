@@ -9,6 +9,7 @@ HANDOFF.md
 PROMPT.md
 
 # misc
+.tmp-*
 .wrangler/
 node_modules/
 .DS_Store

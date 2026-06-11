@@ -594,8 +594,10 @@ createApp({
       await ff.writeFile("band.png", await fetchFile(png));
 
       this.status="合成中（影片越長越久，請稍等）…";
-      // 先 crop 成偶數尺寸（原始影片可能是奇數寬高），再 pad 白 band、疊 PNG
-      const fc=`[0:v]crop=${W}:${Hm}:0:0[c];[c]pad=iw:ih+${b}:0:${b}:color=white[bg];[bg][1:v]overlay=0:0[v]`;
+      // fps=30：iPhone 螢幕錄影是變動幀率（畫面不動就不出幀），不先按原始時間戳
+      // 轉成固定幀率的話，幀會被平均重排，快動作段落看起來變慢動作。
+      // 之後 crop 成偶數尺寸（原始影片可能是奇數寬高），再 pad 白 band、疊 PNG
+      const fc=`[0:v]fps=30,crop=${W}:${Hm}:0:0[c];[c]pad=iw:ih+${b}:0:${b}:color=white[bg];[bg][1:v]overlay=0:0[v]`;
       await ff.exec([
         "-i","in.mp4","-i","band.png",
         "-filter_complex",fc,
