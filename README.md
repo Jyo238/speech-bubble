@@ -1,12 +1,11 @@
 # 嘴泡 Mouth Bubble
 
-把「漫畫對話框」壓在影片頂部、直接在瀏覽器輸出新 MP4 的迷因小工具。
+把「漫畫對話框」壓在影片或圖片頂部、直接在瀏覽器輸出新檔的迷因小工具。
 用途是做 Threads 上那種「嘲諷對話框」反應迷因。
 
-**[線上試玩 Demo](https://github.com/Jyo238/speech-bubble)**（部署到 Cloudflare Pages 後把網址貼這裡）
-
-> A tiny in-browser meme tool: drop a video, draw a comic speech bubble on a white
-> band above it, export a new MP4 — 100% client-side, your video never leaves your device.
+> A tiny in-browser meme tool: drop a video or an image, stamp the classic Threads-style
+> speech bubble band on top, export a new MP4 / PNG — 100% client-side, your file never
+> leaves your device.
 
 ---
 
@@ -21,21 +20,24 @@
 
 ## 功能
 
-- 拖曳 / 點選載入影片（mp4 / mov / webm）
-- 五種氣泡樣式：**脆版**（巨型氣泡只露底邊 + 細尖角，Threads 經典款）、圓框、方框、雲朵（思考）、爆炸
-- 對話框文字（中文逐字折行、自動縮放），常用吐槽句一鍵插入
-- 尖角朝上 / 朝下，**直接在預覽畫面拖曳氣泡與尖角**左右移位，氣泡寬度可縮放
-- 對話框高度可調，即時預覽與輸出用同一套計算 → 所見即所得
-- 匯出前等待 Web 字型載入完成，中文字不會變豆腐
+刻意做到最少——丟檔案、拖尖角、輸出，三步完事：
+
+- 拖曳 / 點選載入**影片**（mp4 / mov / webm）或**圖片**（jpg / png），效果一樣
+- 自動壓上 Threads 經典款對話框：巨型氣泡只露出底邊那條線 + 細針尖角
+- 在預覽上左右拖曳，把尖角對準要嘲諷的對象
+- 影片輸出 MP4（ffmpeg.wasm）；圖片輸出 PNG（純 canvas，秒出）
+- 即時預覽與輸出用同一套計算 → 所見即所得
 - 時長 / 檔案大小護欄提示、合成進度百分比
-- 設定（樣式 / 朝向 / 高度 / 寬度）記在 localStorage
 
 ## 技術架構
 
 - **單一 `index.html`，零 build step。** 介面用 [Vue 3](https://vuejs.org/)（CDN global build），不需要 npm / bundler。
 - 影片合成用 [ffmpeg.wasm](https://ffmpegwasm.netlify.app/)（**單執行緒 core 0.12.x**），
   不需要 SharedArrayBuffer / cross-origin isolation，丟到任何靜態空間都能跑。
-- 合成流程：讀影片寬高 → 在 canvas 以原始解析度畫出頂部 band（白底 + 氣泡 + 文字）→ 匯出 PNG →
+  UMD 版會直接從 CDN `new Worker()` 而被同源政策擋下，已用 `toBlobURL` 轉成
+  同源 blob 再傳 `classWorkerURL` 解掉。
+- 圖片不走 ffmpeg：直接 canvas 合成 → `toBlob` 輸出 PNG。
+- 影片合成流程：讀影片寬高 → 在 canvas 以原始解析度畫出頂部 band（白底 + 氣泡）→ 匯出 PNG →
   ```
   [0:v]crop=W:H:0:0[c];[c]pad=iw:ih+B:0:B:color=white[bg];[bg][1:v]overlay=0:0[v]
   ```
