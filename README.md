@@ -5,6 +5,8 @@
 
 **線上版：https://speech-bubble-9d5.pages.dev**
 
+<img src="demo/mouthbubble.png" alt="輸出範例" width="340" />
+
 > A tiny in-browser meme tool: drop a video or an image, stamp the classic Threads-style
 > speech bubble band on top, export a new MP4 / PNG — 100% client-side, your file never
 > leaves your device.
