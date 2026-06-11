@@ -5,6 +5,7 @@
 S__*.jpg
 
 # misc
+.wrangler/
 node_modules/
 .DS_Store
 Thumbs.db

@@ -3,6 +3,8 @@
 把「漫畫對話框」壓在影片或圖片頂部、直接在瀏覽器輸出新檔的迷因小工具。
 用途是做 Threads 上那種「嘲諷對話框」反應迷因。
 
+**線上版：https://speech-bubble-9d5.pages.dev**
+
 > A tiny in-browser meme tool: drop a video or an image, stamp the classic Threads-style
 > speech bubble band on top, export a new MP4 / PNG — 100% client-side, your file never
 > leaves your device.
@@ -57,8 +59,14 @@ python3 -m http.server
 
 ## 部署到 Cloudflare Pages
 
-1. Cloudflare 後台 → Workers & Pages → Create → Pages → Upload assets，把資料夾拖上去（或接這個 Git repo）。
-2. 拿到 `xxx.pages.dev` 網址，完事。
+用 wrangler（只需要部署 `index.html` 一個檔）：
+
+```bash
+npx wrangler pages project create speech-bubble --production-branch main
+npx wrangler pages deploy <只放 index.html 的資料夾> --project-name speech-bubble --branch main
+```
+
+或走後台：Workers & Pages → Create → Pages → Upload assets，把資料夾拖上去（或接這個 Git repo）。
 
 > `_headers.multithread-example` 是選用範例：只有想換「多執行緒 ffmpeg core」（更快，但需要
 > cross-origin isolation）時，才把它改名成 `_headers` 部署，並自行處理 CDN script 的 CORP/CORS。
