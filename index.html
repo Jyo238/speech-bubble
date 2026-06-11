@@ -248,7 +248,8 @@
 <script>
 const { createApp } = Vue;
 const FF_BASE = "https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/umd";
-const CORE_BASE = "https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd";
+// core 一定要用 esm 版：worker 是 module 型，import() UMD 版拿不到 default export
+const CORE_BASE = "https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm";
 const BAND_RATIO = 0.38; // band 高度 = 媒體高度的 38%（對齊範例圖比例）
 
 createApp({
