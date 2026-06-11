@@ -160,6 +160,18 @@
   .privacy p{margin:0;font-size:13px}
   .privacy b{color:var(--accent-ink)}
 
+  /* ---- ad slots（廣告位佔位；貼上聯播網代碼後刪掉裡面的 span 即可） ---- */
+  .adslot{
+    border:3px dashed rgba(20,20,23,.30);background:rgba(255,255,255,.55);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+    color:rgba(20,20,23,.40);font-size:11px;font-weight:700;letter-spacing:2px;
+    text-align:center;overflow:hidden;
+  }
+  .adslot .adtag{font-family:"Anton";font-size:12px;letter-spacing:3px}
+  .ad-top{min-height:90px;margin-bottom:26px}
+  .ad-side{min-height:250px;width:100%;max-width:300px;margin:24px auto 0}
+  .ad-bottom{min-height:90px;margin-top:28px}
+
   footer{margin-top:34px;font-size:12px;opacity:.6;text-align:center}
   footer a{color:inherit}
 </style>
@@ -177,6 +189,12 @@
     </div>
     <p class="tagline">丟一支影片或一張圖進來，頂上壓個對話框，存成新檔。<b>全程在你手機 / 電腦裡跑，檔案不會上傳。</b></p>
   </header>
+
+  <!-- ▼ 廣告位：頂部橫幅（建議 728×90 / 響應式）。貼上廣告代碼後刪掉兩個 span -->
+  <div class="adslot ad-top" id="ad-top">
+    <span class="adtag">AD</span>
+    <span>廣告位 · 頂部橫幅</span>
+  </div>
 
   <div class="grid">
 
@@ -226,6 +244,12 @@
           另存 {{ resultKind==='video' ? 'MP4' : 'PNG' }}（{{ outName }}）
         </button>
       </div>
+
+      <!-- ▼ 廣告位：右欄方塊（建議 300×250）。貼上廣告代碼後刪掉兩個 span -->
+      <div class="adslot ad-side" id="ad-side">
+        <span class="adtag">AD</span>
+        <span>廣告位 · 300×250</span>
+      </div>
     </section>
   </div>
 
@@ -235,6 +259,12 @@
   <div class="privacy">
     <span class="tick">隱私</span>
     <p>你的影片和圖片<b>不會被傳到任何伺服器，也不會被存起來</b>。合成、輸出全部在你的瀏覽器裡完成。這個網站只是一份靜態網頁，沒有後端、沒有資料庫。唯一從網路抓的東西是處理引擎本身（一個公開的影片工具程式），跟你的檔案無關。</p>
+  </div>
+
+  <!-- ▼ 廣告位：底部橫幅（建議 728×90 / 響應式）。貼上廣告代碼後刪掉兩個 span -->
+  <div class="adslot ad-bottom" id="ad-bottom">
+    <span class="adtag">AD</span>
+    <span>廣告位 · 底部橫幅</span>
   </div>
 
   <footer>

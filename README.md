@@ -84,6 +84,16 @@ npx wrangler pages deploy <只放 index.html 的資料夾> --project-name speech
 - iPhone 的 HEIC 圖片在部分瀏覽器讀不出來（會明確提示），請改用 JPG / PNG。
 - App 內建瀏覽器（LINE / FB / IG…）可能擋選檔或存檔，頁面會偵測並提示改用 Safari / Chrome 開啟。
 
+## 廣告位
+
+頁面預留了三個廣告位（虛線佔位框），要接聯播網時把代碼貼進對應的 `div`、刪掉裡面兩個 `span` 即可：
+
+| id | 位置 | 建議尺寸 |
+|---|---|---|
+| `#ad-top` | 標題下方、工具上方 | 728×90 / 響應式橫幅 |
+| `#ad-side` | 右欄輸出按鈕下方 | 300×250 |
+| `#ad-bottom` | 隱私聲明下方、頁尾上方 | 728×90 / 響應式橫幅 |
+
 ## 開發文件
 
 - [HANDOFF.md](HANDOFF.md) — 專案 handoff：架構、關鍵決策、雷點、待辦。
