@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>嘴泡 — 影片壓對話框</title>
+<meta name="description" content="把漫畫對話框壓在影片頂部、輸出新 MP4 的迷因小工具。100% 在瀏覽器處理，影片絕不上傳。" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#141417;
+    --paper:#E8E7E2;
+    --panel:#FFFFFF;
+    --accent:#FF4326;
+    --accent-ink:#B81E08;
+    --dot:rgba(20,20,23,.10);
+    --line:3px solid var(--ink);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:"Noto Sans TC",system-ui,sans-serif;
+    color:var(--ink);
+    background:var(--paper);
+    background-image:radial-gradient(var(--dot) 1.4px, transparent 1.5px);
+    background-size:14px 14px;
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1080px;margin:0 auto;padding:22px 20px 80px}
+  [v-cloak]{display:none}
+
+  /* ---- masthead ---- */
+  header.mast{
+    display:flex;align-items:flex-end;justify-content:space-between;
+    gap:16px;flex-wrap:wrap;
+    border-bottom:5px solid var(--ink);
+    padding-bottom:14px;margin-bottom:26px;
+  }
+  .mark{display:flex;align-items:center;gap:12px}
+  .mark .glyph{
+    width:52px;height:44px;flex:0 0 auto;background:var(--panel);
+    border:var(--line);border-radius:22px 22px 22px 6px;position:relative;
+    box-shadow:4px 4px 0 var(--ink);
+  }
+  .mark .glyph::after{
+    content:"";position:absolute;left:11px;bottom:-12px;
+    width:14px;height:14px;background:var(--panel);
+    border-right:var(--line);border-bottom:var(--line);
+    transform:rotate(45deg) skew(-6deg,-6deg);
+  }
+  .mark h1{
+    font-family:"Anton",sans-serif;font-weight:400;
+    font-size:34px;letter-spacing:.5px;margin:0;line-height:.9;
+    text-transform:uppercase;
+  }
+  .mark .zh{font-size:13px;font-weight:700;letter-spacing:2px;color:var(--accent-ink);margin-top:2px}
+  .tagline{font-size:13px;font-weight:500;max-width:300px;text-align:right;opacity:.8}
+  .tagline b{color:var(--accent-ink)}
+
+  /* ---- layout ---- */
+  .grid{display:grid;grid-template-columns:1.35fr 1fr;gap:24px;align-items:start}
+  @media(max-width:760px){.grid{grid-template-columns:1fr}}
+
+  .panel{
+    background:var(--panel);border:var(--line);
+    box-shadow:6px 6px 0 var(--ink);
+  }
+
+  /* ---- stage ---- */
+  .drop{
+    aspect-ratio:3/4;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:10px;cursor:pointer;text-align:center;padding:24px;
+    background:
+      repeating-linear-gradient(45deg,transparent 0 16px,rgba(20,20,23,.035) 16px 32px);
+    transition:background .15s;
+  }
+  .drop.drag{background:var(--accent);color:var(--panel)}
+  .drop .big{font-weight:900;font-size:20px}
+  .drop .sub{font-size:13px;opacity:.7;max-width:240px}
+  .drop .plus{
+    width:60px;height:60px;border:var(--line);border-radius:50%;
+    display:grid;place-items:center;font-family:"Anton";font-size:34px;line-height:1;
+  }
+  .drop.drag .plus{border-color:var(--panel)}
+
+  canvas.prevcv{display:block;width:100%;height:auto;background:#fff;touch-action:none;cursor:grab}
+  canvas.prevcv:active{cursor:grabbing}
+  .stage-foot{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
+    border-top:var(--line);padding:10px 14px;font-size:12px;font-weight:500;
+  }
+  .chip{
+    font-family:"Anton";letter-spacing:.5px;font-size:12px;
+    background:var(--ink);color:var(--panel);padding:3px 9px;border-radius:2px;
+  }
+  .draghint{opacity:.6}
+  .linkbtn{background:none;border:none;color:var(--accent-ink);font:inherit;font-weight:700;cursor:pointer;padding:0}
+
+  /* ---- controls ---- */
+  .ctrl h2{
+    font-size:12px;font-weight:900;letter-spacing:2px;text-transform:uppercase;
+    margin:0 0 8px;color:var(--accent-ink);
+  }
+  .field{margin-bottom:18px}
+  textarea.bubbletext{
+    width:100%;border:var(--line);background:#fff;font:inherit;font-weight:700;font-size:16px;
+    padding:11px 12px;resize:vertical;min-height:70px;border-radius:0;
+  }
+  textarea.bubbletext:focus{outline:3px solid var(--accent)}
+  .hint{font-size:12px;opacity:.65;margin-top:6px}
+
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+  .chipbtn{
+    border:2px solid var(--ink);background:#fff;font:inherit;font-size:12px;font-weight:700;
+    padding:4px 10px;cursor:pointer;border-radius:14px;
+  }
+  .chipbtn:hover{background:var(--accent);border-color:var(--accent);color:#fff}
+  .chipbtn.ghost{border-style:dashed;opacity:.7}
+
+  .seg{display:flex;border:var(--line);width:100%}
+  .seg button{
+    flex:1;border:none;background:#fff;font:inherit;font-weight:700;font-size:13px;
+    padding:9px 6px;cursor:pointer;border-left:var(--line);
+  }
+  .seg button:first-child{border-left:none}
+  .seg button[aria-pressed="true"]{background:var(--ink);color:var(--panel)}
+
+  .stylegrid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+  .stylegrid button{
+    border:var(--line);background:#fff;font:inherit;font-weight:700;font-size:13px;
+    padding:8px 4px;cursor:pointer;
+  }
+  .stylegrid button[aria-pressed="true"]{background:var(--ink);color:var(--panel)}
+  @media(max-width:400px){.stylegrid{grid-template-columns:repeat(3,1fr)}}
+
+  input[type=range]{width:100%;accent-color:var(--accent)}
+  .rangewrap{display:flex;align-items:center;gap:12px}
+  .rangewrap output{font-family:"Anton";font-size:16px;min-width:46px;text-align:right}
+
+  .go{
+    width:100%;border:var(--line);background:var(--accent);color:#fff;
+    font-family:"Anton";font-size:22px;letter-spacing:1px;padding:15px;cursor:pointer;
+    box-shadow:5px 5px 0 var(--ink);transition:transform .06s, box-shadow .06s;
+  }
+  .go:hover{transform:translate(-1px,-1px);box-shadow:6px 6px 0 var(--ink)}
+  .go:active{transform:translate(3px,3px);box-shadow:2px 2px 0 var(--ink)}
+  .go:disabled{background:#bbb;cursor:not-allowed;box-shadow:5px 5px 0 #888;transform:none}
+
+  .status{
+    margin-top:12px;font-size:13px;font-weight:500;min-height:20px;
+    display:flex;align-items:center;gap:8px;
+  }
+  .warn{
+    margin-top:8px;font-size:12.5px;font-weight:700;color:var(--accent-ink);
+    background:#fff;border:2px solid var(--accent-ink);padding:7px 10px;
+  }
+  .bar{height:10px;background:#fff;border:var(--line);margin-top:8px;display:none}
+  .bar.on{display:block}
+  .bar i{display:block;height:100%;width:0;background:var(--accent);transition:width .2s}
+
+  .result{margin-top:16px}
+  .result video{width:100%;border:var(--line);display:block;background:#000}
+  .dl{
+    display:inline-block;margin-top:12px;background:var(--ink);color:#fff;text-decoration:none;
+    font-weight:900;padding:11px 18px;border:var(--line);box-shadow:4px 4px 0 var(--accent);
+  }
+
+  /* ---- privacy strip ---- */
+  .privacy{
+    margin-top:28px;border:var(--line);background:var(--panel);
+    box-shadow:6px 6px 0 var(--ink);padding:16px 18px;
+    display:flex;gap:14px;align-items:flex-start;
+  }
+  .privacy .tick{
+    font-family:"Anton";font-size:13px;background:var(--accent-ink);color:#fff;
+    padding:4px 8px;border-radius:2px;flex:0 0 auto;letter-spacing:.5px;
+  }
+  .privacy p{margin:0;font-size:13px}
+  .privacy b{color:var(--accent-ink)}
+
+  footer{margin-top:34px;font-size:12px;opacity:.6;text-align:center}
+  footer a{color:inherit}
+</style>
+</head>
+<body>
+<div id="app" class="wrap" v-cloak>
+
+  <header class="mast">
+    <div class="mark">
+      <div class="glyph"></div>
+      <div>
+        <h1>Mouth Bubble</h1>
+        <div class="zh">嘴泡 · 影片壓對話框</div>
+      </div>
+    </div>
+    <p class="tagline">丟一支影片進來，頂上壓個對話框，存成新影片。<b>全程在你手機 / 電腦裡跑，影片不會上傳。</b></p>
+  </header>
+
+  <div class="grid">
+
+    <!-- LEFT: stage -->
+    <section class="panel">
+      <div class="drop" v-show="!hasVideo" :class="{drag:dragOver}"
+           @click="$refs.file.click()"
+           @dragenter.prevent="dragOver=true" @dragover.prevent="dragOver=true"
+           @dragleave.prevent="dragOver=false" @drop.prevent="onDrop">
+        <div class="plus">+</div>
+        <div class="big">把影片丟進來</div>
+        <div class="sub">或點一下選檔。支援 mp4 / mov / webm，短一點跑比較快。</div>
+        <input ref="file" type="file" accept="video/*" hidden @change="onPick" />
+      </div>
+
+      <div v-show="hasVideo">
+        <canvas ref="prev" class="prevcv"
+                @pointerdown="onPtrDown" @pointermove="onPtrMove"
+                @pointerup="onPtrUp" @pointercancel="onPtrUp"></canvas>
+        <video ref="src" playsinline muted loop style="display:none"></video>
+        <div class="stage-foot">
+          <span class="chip">{{ dims }}</span>
+          <span class="draghint">直接拖曳預覽裡的氣泡 / 尖角可左右移位</span>
+          <button class="linkbtn" @click="reset">換一支影片</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- RIGHT: controls -->
+    <section class="ctrl">
+      <div class="field">
+        <h2>對話框文字</h2>
+        <textarea class="bubbletext" v-model="text" maxlength="80"
+          placeholder="留空就是脆風格的空白框（文字打在貼文裡）。或在這裡直接打一句嘴爆它。"></textarea>
+        <div class="chips">
+          <button v-for="p in phrases" :key="p" class="chipbtn" @click="text=p">{{ p }}</button>
+          <button class="chipbtn ghost" @click="text=''">清空</button>
+        </div>
+        <div class="hint">最多 80 字，Enter 換行。</div>
+      </div>
+
+      <div class="field">
+        <h2>氣泡樣式</h2>
+        <div class="stylegrid">
+          <button v-for="s in styles" :key="s.key"
+                  :aria-pressed="styleKey===s.key ? 'true' : 'false'"
+                  @click="styleKey=s.key">{{ s.label }}</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <h2>尖角朝向</h2>
+        <div class="seg">
+          <button :aria-pressed="tail==='down' ? 'true' : 'false'" @click="tail='down'">朝下（指影片）</button>
+          <button :aria-pressed="tail==='up' ? 'true' : 'false'" @click="tail='up'">朝上（指貼文）</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <h2>對話框高度</h2>
+        <div class="rangewrap">
+          <input type="range" min="16" max="42" v-model.number="bandPct" />
+          <output>{{ bandPct }}%</output>
+        </div>
+      </div>
+
+      <div class="field" v-if="styleKey!=='classic'">
+        <h2>氣泡寬度（縮放）</h2>
+        <div class="rangewrap">
+          <input type="range" min="40" max="96" v-model.number="bubbleScale" />
+          <output>{{ bubbleScale }}%</output>
+        </div>
+      </div>
+
+      <button class="go" :disabled="!hasVideo || exporting" @click="exportVideo">
+        {{ exporting ? '處理中…' : '輸出影片' }}
+      </button>
+      <div class="status">{{ status }}</div>
+      <div class="warn" v-for="w in warnings" :key="w">⚠ {{ w }}</div>
+      <div class="bar" :class="{on:exporting}"><i :style="{width:progressPct}"></i></div>
+
+      <div class="result" v-if="resultUrl">
+        <video :src="resultUrl" controls playsinline></video>
+        <a class="dl" :href="resultUrl" download="mouthbubble.mp4">下載 MP4</a>
+      </div>
+    </section>
+  </div>
+
+  <div class="privacy">
+    <span class="tick">私隱</span>
+    <p>你的影片<b>不會被傳到任何伺服器，也不會被存起來</b>。剪輯、合成、輸出全部在你的瀏覽器裡完成。這個網站只是一份靜態網頁，沒有後端、沒有資料庫。唯一從網路抓的東西是處理引擎本身（一個公開的影片工具程式），跟你的影片無關。</p>
+  </div>
+
+  <footer>
+    放在 Cloudflare Pages 之類的靜態空間就能免費跑 · 不存檔 · 純前端 ·
+    <a href="https://github.com/Jyo238/speech-bubble" target="_blank" rel="noopener">GitHub 開源</a>
+  </footer>
+</div>
+
+<!-- Vue 3（CDN global build，零 build step） -->
+<script src="https://unpkg.com/vue@3.5.13/dist/vue.global.prod.js"></script>
+<!-- ffmpeg.wasm（單執行緒 core — 不需要 SharedArrayBuffer / 特殊 header） -->
+<script src="https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.js"></script>
+<script src="https://unpkg.com/@ffmpeg/util@0.12.1/dist/umd/index.js"></script>
+<script>
+const { createApp } = Vue;
+const PREFS_KEY = "mouthbubble.prefs";
+const FONT_PROBE = '900 64px "Noto Sans TC"';
+
+createApp({
+  data(){
+    return {
+      // bubble settings
+      text:"", tail:"down", bandPct:26, styleKey:"classic",
+      bubbleScale:88, bubbleX:0.5, tailX:0.5,
+      styles:[
+        {key:"classic", label:"脆版"},
+        {key:"rounded", label:"圓框"},
+        {key:"square",  label:"方框"},
+        {key:"cloud",   label:"雲朵"},
+        {key:"burst",   label:"爆炸"},
+      ],
+      phrases:["蛤？","你認真？","笑死","就這？","誰問你了","好了啦","是在哈囉","先不要"],
+      // app state
+      hasVideo:false, dragOver:false, exporting:false,
+      dims:"—", status:"先丟一支影片進來。", progress:0,
+      warnings:[], resultUrl:"",
+    };
+  },
+  computed:{
+    progressPct(){ return Math.round(this.progress*100)+"%"; },
+  },
+  watch:{
+    styleKey:"savePrefs", tail:"savePrefs", bandPct:"savePrefs", bubbleScale:"savePrefs",
+  },
+  mounted(){
+    this._vw=0; this._vh=0; this._raf=null; this._file=null;
+    this._ffmpeg=null; this._ffLoaded=false; this._drag=null;
+    this._bandCv=document.createElement("canvas");
+    this.restorePrefs();
+    // 預先載入 900 粗體中文字型，預覽第一筆字就用對字
+    if(document.fonts && document.fonts.load) document.fonts.load(FONT_PROBE).catch(()=>{});
+  },
+  methods:{
+    /* ---------- prefs (localStorage) ---------- */
+    restorePrefs(){
+      try{
+        const p=JSON.parse(localStorage.getItem(PREFS_KEY)||"{}");
+        if(this.styles.some(s=>s.key===p.styleKey)) this.styleKey=p.styleKey;
+        if(p.tail==="up"||p.tail==="down") this.tail=p.tail;
+        if(Number.isFinite(p.bandPct)) this.bandPct=Math.min(42,Math.max(16,p.bandPct));
+        if(Number.isFinite(p.bubbleScale)) this.bubbleScale=Math.min(96,Math.max(40,p.bubbleScale));
+      }catch(_){}
+    },
+    savePrefs(){
+      try{
+        localStorage.setItem(PREFS_KEY, JSON.stringify({
+          styleKey:this.styleKey, tail:this.tail,
+          bandPct:this.bandPct, bubbleScale:this.bubbleScale,
+        }));
+      }catch(_){}
+    },
+
+    /* ---------- load video ---------- */
+    onPick(e){ const f=e.target.files[0]; if(f) this.loadVideo(f); e.target.value=""; },
+    onDrop(e){
+      this.dragOver=false;
+      const f=e.dataTransfer.files[0];
+      if(f && f.type.startsWith("video")) this.loadVideo(f);
+    },
+    loadVideo(file){
+      this._file=file;
+      this.warnings=[];
+      if(this.resultUrl){ URL.revokeObjectURL(this.resultUrl); this.resultUrl=""; }
+      const v=this.$refs.src;
+      if(this._raf) cancelAnimationFrame(this._raf);
+      if(v.src && v.src.startsWith("blob:")) URL.revokeObjectURL(v.src);
+      v.src=URL.createObjectURL(file);
+      v.load();
+      v.onloadedmetadata=()=>{
+        // 強制偶數尺寸（h264 要求）
+        this._vw=v.videoWidth - (v.videoWidth%2);
+        this._vh=v.videoHeight - (v.videoHeight%2);
+        const mb=file.size/1048576;
+        this.dims=`${this._vw}×${this._vh} · ${v.duration.toFixed(1)}s · ${mb<10?mb.toFixed(1):Math.round(mb)} MB`;
+        // 護欄：時長 / 檔案大小
+        if(v.duration>60) this.warnings.push("影片超過 60 秒，瀏覽器合成會比較久（可能要好幾分鐘），建議先剪短。");
+        if(mb>150) this.warnings.push("檔案超過 150 MB，可能撞到瀏覽器記憶體上限；輸出失敗的話請先壓小。");
+        this.hasVideo=true;
+        this.status="調好對話框，按「輸出影片」。";
+        v.currentTime=Math.min(0.1, v.duration/2);
+        v.play().catch(()=>{});
+        this.renderPreview();
+      };
+    },
+    reset(){
+      this.hasVideo=false; this._file=null;
+      if(this._raf) cancelAnimationFrame(this._raf);
+      const v=this.$refs.src;
+      v.pause();
+      if(v.src && v.src.startsWith("blob:")) URL.revokeObjectURL(v.src);
+      v.removeAttribute("src"); v.load();
+      if(this.resultUrl){ URL.revokeObjectURL(this.resultUrl); this.resultUrl=""; }
+      this.warnings=[]; this.dims="—";
+      this.status="先丟一支影片進來。";
+    },
+
+    /* ---------- shared band math（預覽與匯出共用，所見即所得） ---------- */
+    bandPx(){
+      let b=Math.round(this._vh*(this.bandPct/100));
+      if(b%2) b++;
+      return Math.max(b,40);
+    },
+    fontSpec(fs){ return `900 ${fs}px "Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif`; },
+
+    drawBand(ctx,W,H){
+      const stroke=Math.max(3,Math.round(W*0.0075));
+      ctx.save();
+      ctx.fillStyle="#fff"; ctx.fillRect(0,0,W,H);
+      ctx.lineJoin="round"; ctx.lineCap="round";
+      ctx.lineWidth=stroke; ctx.strokeStyle="#141417";
+      const tx=Math.min(0.95,Math.max(0.05,this.tailX))*W;
+      const area = this.styleKey==="classic"
+        ? this.drawClassic(ctx,W,H,stroke,tx)
+        : this.drawBubble(ctx,W,H,stroke,tx);
+      const t=this.text.trim();
+      if(t && area) this.drawText(ctx,t,area);
+      ctx.restore();
+    },
+
+    // 「脆版」：巨型氣泡只露出底邊那條線 + 細長尖角（對齊範例圖）
+    drawClassic(ctx,W,H,stroke,tx){
+      const down=this.tail==="down";
+      const hasText=!!this.text.trim();
+      const lineY=down ? (hasText? H*0.60 : H*0.34)
+                       : (hasText? H*0.40 : H*0.66);
+      const sag=(down?1:-1)*H*0.05;
+      const tw=Math.max(W*0.055, stroke*4);
+      const tipY=down ? H+stroke : -stroke;
+      const tipX=tx-tw*0.18;
+      ctx.beginPath();
+      ctx.moveTo(-stroke*2, lineY-sag*0.6);
+      ctx.quadraticCurveTo((tx-tw/2)*0.45, lineY+sag, tx-tw/2, lineY+sag*0.4);
+      ctx.lineTo(tipX, tipY);
+      ctx.moveTo(tipX+stroke*0.7, tipY);
+      ctx.lineTo(tx+tw/2, lineY+sag*0.4);
+      ctx.quadraticCurveTo(tx+(W-tx)*0.5, lineY+sag*0.3, W+stroke*2, lineY-sag*0.8);
+      ctx.stroke();
+      return down
+        ? {x:W/2, y:lineY*0.48, maxW:W*0.86, maxH:lineY*0.74}
+        : {x:W/2, y:(H+lineY)/2, maxW:W*0.86, maxH:(H-lineY)*0.74};
+    },
+
+    // 圓框 / 方框 / 雲朵 / 爆炸：完整氣泡 + 尾巴
+    drawBubble(ctx,W,H,stroke,tx){
+      const down=this.tail==="down";
+      const scale=Math.min(0.96,Math.max(0.4,this.bubbleScale/100));
+      const bw=W*scale;
+      const minM=W*0.02;
+      const bcx=Math.max(minM+bw/2, Math.min(W-minM-bw/2, this.bubbleX*W));
+      const tailH=H*0.20, gap=H*0.06, topM=H*0.10;
+      const by=down ? topM : tailH+gap;
+      const bh=H-topM-tailH-gap;
+      const bx=bcx-bw/2;
+      const cy=by+bh/2;
+      const txc=Math.max(bx+bw*0.12, Math.min(bx+bw*0.88, tx));
+
+      if(this.styleKey==="cloud"){
+        // 思考泡泡：小圓圈代替尾巴
+        const dir=down?1:-1;
+        const yEdge=down? by+bh : by;
+        const r1=Math.max(3,H*0.045), r2=Math.max(2,H*0.028);
+        for(const [r,f] of [[r1,0.40],[r2,0.80]]){
+          ctx.beginPath();
+          ctx.arc(txc+dir*r*0.3, yEdge+dir*tailH*f, r, 0, Math.PI*2);
+          ctx.fillStyle="#fff"; ctx.fill(); ctx.stroke();
+        }
+      }else{
+        // 三角尾巴先畫，氣泡本體蓋掉底邊
+        const tw=Math.max(W*0.05, stroke*5);
+        const yBase=down? by+bh-stroke : by+stroke;
+        const tipY=down? H-stroke*0.5 : stroke*0.5;
+        ctx.beginPath();
+        ctx.moveTo(txc-tw/2, yBase);
+        ctx.lineTo(txc-tw*0.1, tipY);
+        ctx.lineTo(txc+tw/2, yBase);
+        ctx.closePath();
+        ctx.fillStyle="#fff"; ctx.fill(); ctx.stroke();
+      }
+
+      ctx.fillStyle="#fff";
+      if(this.styleKey==="rounded"){
+        const r=Math.min(bh/2, H*0.28);
+        this.roundedPath(ctx,bx,by,bw,bh,r);
+        ctx.fill(); ctx.stroke();
+      }else if(this.styleKey==="square"){
+        ctx.beginPath(); ctx.rect(bx,by,bw,bh);
+        ctx.fill(); ctx.stroke();
+      }else if(this.styleKey==="burst"){
+        const n=14, rx=bw/2, ry=bh/2;
+        ctx.save(); ctx.lineJoin="miter";
+        ctx.beginPath();
+        for(let i=0;i<n*2;i++){
+          const a=(i/(n*2))*Math.PI*2 - Math.PI/2;
+          const wob=1+0.07*Math.sin(i*2.3);
+          const f=i%2 ? Math.min(0.78,0.72*wob) : Math.min(1,wob);
+          const px=bcx+Math.cos(a)*rx*f, py=cy+Math.sin(a)*ry*f;
+          i ? ctx.lineTo(px,py) : ctx.moveTo(px,py);
+        }
+        ctx.closePath();
+        ctx.fill(); ctx.stroke();
+        ctx.restore();
+      }else{ // cloud body：重疊圓圈，先全部描邊、再全部填白蓋掉內側線
+        const n=Math.max(3, Math.round(bw/(bh*0.9)));
+        const r0=bh*0.45;
+        const x0=bx+r0, x1=bx+bw-r0;
+        const cs=[];
+        for(let i=0;i<n;i++){
+          const cx=n===1 ? bcx : x0+(x1-x0)*(i/(n-1));
+          const r=bh*(i%2 ? 0.50 : 0.42);
+          const yy=cy+(i%2?-1:1)*bh*0.05;
+          cs.push([cx,yy,Math.max(4,r)]);
+        }
+        ctx.save(); ctx.lineWidth=stroke*2;
+        for(const [x,y,r] of cs){ ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.stroke(); }
+        for(const [x,y,r] of cs){ ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill(); }
+        ctx.restore();
+      }
+
+      const shrink=this.styleKey==="burst"?0.62 : this.styleKey==="cloud"?0.70 : 0.84;
+      return {x:bcx, y:cy, maxW:bw*shrink, maxH:bh*0.74};
+    },
+
+    roundedPath(ctx,x,y,w,h,r){
+      ctx.beginPath();
+      ctx.moveTo(x+r,y);
+      ctx.arcTo(x+w,y,x+w,y+h,r);
+      ctx.arcTo(x+w,y+h,x,y+h,r);
+      ctx.arcTo(x,y+h,x,y,r);
+      ctx.arcTo(x,y,x+w,y,r);
+      ctx.closePath();
+    },
+
+    drawText(ctx,t,{x,y,maxW,maxH}){
+      ctx.fillStyle="#141417";
+      ctx.textAlign="center"; ctx.textBaseline="middle";
+      const fit=this.fitText(ctx,t,maxW,maxH,Math.round(maxH*0.60));
+      ctx.font=this.fontSpec(fit.fs);
+      const lh=fit.fs*1.18, total=lh*fit.lines.length;
+      let ty=y-total/2+lh/2;
+      for(const ln of fit.lines){ ctx.fillText(ln,x,ty); ty+=lh; }
+    },
+    fitText(ctx,text,maxW,maxH,startFs){
+      const paras=text.split(/\n/).map(s=>s.trim()).filter(Boolean);
+      for(let fs=Math.max(14,startFs); fs>=12; fs-=2){
+        ctx.font=this.fontSpec(fs);
+        const lines=[];
+        for(const p of paras) lines.push(...this.wrapLine(ctx,p,maxW));
+        if(lines.length<=4 && lines.length*fs*1.18<=maxH) return {lines,fs};
+        if(fs<=12){
+          const max=Math.max(1,Math.floor(maxH/(fs*1.18)));
+          return {lines:lines.slice(0,max), fs};
+        }
+      }
+      return {lines:[text], fs:12};
+    },
+    wrapLine(ctx,text,maxW){
+      // 有空白照詞折行，CJK（無空白）逐字折行
+      const units=/\s/.test(text) ? text.split(/(\s+)/) : Array.from(text);
+      const lines=[]; let cur="";
+      for(const u of units){
+        const t2=cur+u;
+        if(ctx.measureText(t2).width>maxW && cur){ lines.push(cur.trim()); cur=u.trim()?u:""; }
+        else cur=t2;
+      }
+      if(cur.trim()) lines.push(cur.trim());
+      return lines.length?lines:[""];
+    },
+
+    /* ---------- live preview ---------- */
+    renderPreview(){
+      if(!this.hasVideo) return;
+      const cv=this.$refs.prev, v=this.$refs.src;
+      const b=this.bandPx(), W=this._vw, Hv=this._vh;
+      if(cv.width!==W || cv.height!==Hv+b){ cv.width=W; cv.height=Hv+b; }
+      const ctx=cv.getContext("2d");
+      if(v.readyState>=2) ctx.drawImage(v,0,b,W,Hv);
+      else { ctx.fillStyle="#000"; ctx.fillRect(0,b,W,Hv); }
+      const bc=this._bandCv;
+      if(bc.width!==W || bc.height!==b){ bc.width=W; bc.height=b; }
+      this.drawBand(bc.getContext("2d"),W,b);
+      ctx.drawImage(bc,0,0);
+      this._raf=requestAnimationFrame(()=>this.renderPreview());
+    },
+
+    /* ---------- drag bubble / tail on preview ---------- */
+    canvasPos(e){
+      const cv=this.$refs.prev, r=cv.getBoundingClientRect();
+      return { x:(e.clientX-r.left)/r.width*cv.width, y:(e.clientY-r.top)/r.height*cv.height };
+    },
+    onPtrDown(e){
+      if(!this.hasVideo) return;
+      const {x,y}=this.canvasPos(e);
+      if(y>this.bandPx()) return; // 影片區不處理
+      const W=this._vw, tx=this.tailX*W;
+      const target=(this.styleKey==="classic" || Math.abs(x-tx)<W*0.08) ? "tail" : "bubble";
+      this._drag={target, dx: x-(target==="tail"?tx:this.bubbleX*W)};
+      e.currentTarget.setPointerCapture(e.pointerId);
+    },
+    onPtrMove(e){
+      if(!this._drag || !this.hasVideo) return;
+      const {x}=this.canvasPos(e);
+      const v=(x-this._drag.dx)/this._vw;
+      if(this._drag.target==="tail") this.tailX=Math.min(0.95,Math.max(0.05,v));
+      else this.bubbleX=Math.min(1,Math.max(0,v));
+    },
+    onPtrUp(){ this._drag=null; },
+
+    /* ---------- export with ffmpeg.wasm ---------- */
+    async ensureFFmpeg(){
+      if(this._ffLoaded) return;
+      if(!window.FFmpegWASM || !window.FFmpegUtil) throw new Error("引擎沒載到（請檢查網路）");
+      const { FFmpeg }=window.FFmpegWASM;
+      const { toBlobURL }=window.FFmpegUtil;
+      const ff=this._ffmpeg=new FFmpeg();
+      ff.on("progress",({progress})=>{
+        const p=Math.max(0,Math.min(1,progress||0));
+        this.progress=p;
+        if(this.exporting) this.status=`合成中 ${Math.round(p*100)}%（影片越長越久，請稍等）…`;
+      });
+      this.status="第一次使用，正在載入引擎（約 25 MB，之後會快取）…";
+      const base="https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd";
+      await ff.load({
+        coreURL: await toBlobURL(`${base}/ffmpeg-core.js`,"text/javascript"),
+        wasmURL: await toBlobURL(`${base}/ffmpeg-core.wasm`,"application/wasm"),
+      });
+      this._ffLoaded=true;
+    },
+    async exportVideo(){
+      if(!this.hasVideo || this.exporting) return;
+      this.exporting=true; this.progress=0;
+      if(this.resultUrl){ URL.revokeObjectURL(this.resultUrl); this.resultUrl=""; }
+      try{
+        // 字型時序 bug 修正：等 Web 字型載完再畫匯出用 band，
+        // 否則輸出影片裡的中文會變成 fallback 字（最多等 5 秒避免卡死）
+        this.status="確認字型載入…";
+        await Promise.race([
+          Promise.all([document.fonts.load(FONT_PROBE), document.fonts.ready]).catch(()=>{}),
+          new Promise(r=>setTimeout(r,5000)),
+        ]);
+
+        await this.ensureFFmpeg();
+        const { fetchFile }=window.FFmpegUtil;
+        const b=this.bandPx(), W=this._vw, Hv=this._vh;
+
+        // 以原始解析度畫出 band PNG（跟預覽同一套計算）
+        const bc=this._bandCv;
+        bc.width=W; bc.height=b;
+        this.drawBand(bc.getContext("2d"),W,b);
+        const png=await new Promise(res=>bc.toBlob(res,"image/png"));
+
+        this.status="寫入檔案…";
+        const ff=this._ffmpeg;
+        await ff.writeFile("in.mp4", await fetchFile(this._file));
+        await ff.writeFile("band.png", await fetchFile(png));
+
+        this.status="合成中（影片越長越久，請稍等）…";
+        // 先 crop 成偶數尺寸（原始影片可能是奇數寬高），再 pad 白 band、疊 PNG
+        const fc=`[0:v]crop=${W}:${Hv}:0:0[c];[c]pad=iw:ih+${b}:0:${b}:color=white[bg];[bg][1:v]overlay=0:0[v]`;
+        await ff.exec([
+          "-i","in.mp4","-i","band.png",
+          "-filter_complex",fc,
+          "-map","[v]","-map","0:a?",
+          "-c:v","libx264","-pix_fmt","yuv420p","-preset","veryfast",
+          "-movflags","+faststart","-c:a","aac",
+          "out.mp4"
+        ]);
+
+        const data=await ff.readFile("out.mp4");
+        this.resultUrl=URL.createObjectURL(new Blob([data],{type:"video/mp4"}));
+        this.status="完成 ✓ 可以播放、下載了。";
+        // 清掉 wasm 檔案系統裡的暫存，釋放記憶體
+        for(const f of ["in.mp4","band.png","out.mp4"]){
+          try{ await ff.deleteFile(f); }catch(_){}
+        }
+      }catch(err){
+        console.error(err);
+        this.status="出錯了："+(err&&err.message||err)+"。若是在預覽框裡跑不動，部署到網路上（例如 Cloudflare Pages）就會正常。";
+      }finally{
+        this.exporting=false;
+      }
+    },
+  },
+}).mount("#app");
+</script>
+</body>
+</html>

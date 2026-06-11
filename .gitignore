@@ -1,0 +1,10 @@
+# 測試 / 範例影片與圖片：含個人內容，不進公開 repo
+*.mp4
+*.mov
+*.webm
+S__*.jpg
+
+# misc
+node_modules/
+.DS_Store
+Thumbs.db

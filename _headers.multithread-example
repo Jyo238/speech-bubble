@@ -1,0 +1,11 @@
+# 這個檔案是「選用」的。
+# 目前 index.html 用的是單執行緒引擎，不需要這些 header 也能跑。
+# 只有當你之後想換成「多執行緒」版本（速度更快）才需要它，
+# 因為那會用到 SharedArrayBuffer，瀏覽器要求網站處於 cross-origin isolation。
+#
+# 用法：把這個檔名為 _headers（前面有底線、沒有副檔名），跟 index.html 放在同一層，
+# Cloudflare Pages 會自動套用。
+
+/*
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Embedder-Policy: require-corp
