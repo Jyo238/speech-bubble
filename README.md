@@ -1,30 +1,32 @@
 # 嘴泡 Mouth Bubble
 
-把「漫畫對話框」壓在影片或圖片頂部、直接在瀏覽器輸出新檔的迷因小工具。
-用途是做 Threads 上那種「嘲諷對話框」反應迷因。
+做 Threads 那種「嘲諷對話框」迷因用的小工具。
+丟一支影片或一張圖進來，頂上自動壓一條漫畫對話框，輸出新檔，拿去發文。
 
 **線上版：https://speech-bubble-9d5.pages.dev**
 
 <img src="demo/mouthbubble.png" alt="輸出範例" width="340" />
 
-> A tiny in-browser meme tool: drop a video or an image, stamp the classic Threads-style
-> speech bubble band on top, export a new MP4 / PNG — 100% client-side, your file never
-> leaves your device.
+> Drop a video or an image, stamp the classic Threads-style speech bubble on top,
+> export a new MP4 / PNG. Everything runs in your browser — your file is never uploaded.
 
 ---
 
-## 三條不能妥協的紅線
+## 先講最重要的：影片絕不上傳
 
-1. **100% 瀏覽器端處理** — 沒有後端、沒有 server、沒有資料庫、沒有任何會收到影片的 API。
-2. **影片絕不上傳、絕不儲存** — 剪輯、合成、輸出全部在你的裝置裡完成。
-3. **零成本靜態部署** — 一份 `index.html` 丟上 Cloudflare Pages 免費方案就能跑，無 build step。
+所有處理都在你自己的瀏覽器裡跑完。這個網站沒有後端、沒有資料庫，你的檔案想被存起來也沒地方存。
 
-這三條互相成全：沒有後端 → 沒地方存影片 → 不用付伺服器費。
-任何「加個上傳 API」的想法都是走錯方向。
+對開發來說，這代表三條不能動的原則：
+
+1. 100% 瀏覽器端處理，不能有任何會收到影片的 API
+2. 純靜態網站，一份 `index.html` 就能跑，無 build step
+3. 部署在 Cloudflare Pages 免費方案，零成本
+
+誰想加上傳 API，就是走錯方向。
 
 ## 功能
 
-刻意做到最少——丟檔案、拖尖角、輸出，三步完事：
+刻意做到最少——丟檔案、按輸出、存檔，就這樣：
 
 - 拖曳 / 點選載入**影片**（mp4 / mov / webm）或**圖片**（jpg / png），效果一樣
 - 自動壓上 Threads 經典款對話框：巨型氣泡只露出底邊那條線 + 細針尖角（固定置中）
