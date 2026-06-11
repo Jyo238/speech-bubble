@@ -30,7 +30,8 @@
 - 自動壓上 Threads 經典款對話框：巨型氣泡只露出底邊那條線 + 細針尖角（固定置中）
 - 點一下預覽就能重新選檔
 - 影片輸出 MP4（ffmpeg.wasm）；圖片輸出 PNG（純 canvas，秒出）
-- 「另存新檔」對話框存檔（支援的瀏覽器），檔名固定為 `原檔名_bubble.mp4/png`
+- 存檔三層策略，檔名固定 `原檔名_bubble.mp4/png`：桌面 Chromium 跳「另存新檔」對話框；
+  手機（iOS 15+ / Android）跳系統分享面板可直接存進相簿；其他瀏覽器退回一般下載
 - 即時預覽與輸出用同一套計算 → 所見即所得
 - 時長 / 檔案大小護欄提示、合成進度百分比
 
@@ -80,6 +81,8 @@ npx wrangler pages deploy <只放 index.html 的資料夾> --project-name speech
 - 第一次匯出會從 CDN 下載約 25 MB 的 ffmpeg 引擎（之後快取）。10 秒 / 720p 大約數十秒，手機更慢。
 - 影片太長太大可能撞到瀏覽器 wasm 記憶體上限（介面會給護欄提示）。
 - 會擋 CDN fetch 的沙箱 iframe 裡「匯出」跑不動；正式部署後正常。
+- iPhone 的 HEIC 圖片在部分瀏覽器讀不出來（會明確提示），請改用 JPG / PNG。
+- App 內建瀏覽器（LINE / FB / IG…）可能擋選檔或存檔，頁面會偵測並提示改用 Safari / Chrome 開啟。
 
 ## 開發文件
 

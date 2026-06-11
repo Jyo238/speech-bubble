@@ -87,6 +87,8 @@
   .drop.drag .plus{border-color:var(--panel)}
 
   canvas.prevcv{display:block;width:100%;height:auto;background:#fff;cursor:pointer}
+  /* iOS Safari 對 display:none 的 video 有載入/繪製怪癖，改用移出畫面外的方式藏 */
+  video.hiddensrc{position:fixed;left:-9999px;top:0;width:2px;height:2px;opacity:0;pointer-events:none}
   .stage-foot{
     display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
     border-top:var(--line);padding:10px 14px;font-size:12px;font-weight:500;
@@ -193,7 +195,6 @@
       <div v-show="hasMedia">
         <canvas ref="prev" class="prevcv" title="點一下換檔案"
                 @click="$refs.file.click()"></canvas>
-        <video ref="src" playsinline muted loop style="display:none"></video>
         <div class="stage-foot">
           <span class="chip">{{ dims }}</span>
           <span class="draghint">點一下預覽可以重新選檔</span>
@@ -204,6 +205,7 @@
 
     <!-- RIGHT: action -->
     <section class="ctrl">
+      <div class="warn" v-if="envWarn">⚠ {{ envWarn }}</div>
       <h2>怎麼用</h2>
       <ol class="howto">
         <li>丟一支影片或一張圖進來</li>
@@ -226,6 +228,9 @@
       </div>
     </section>
   </div>
+
+  <!-- 隱藏的影片來源元素：放在 v-show 容器外面，避免被 display:none 影響（iOS 怪癖） -->
+  <video ref="src" class="hiddensrc" playsinline webkit-playsinline muted loop preload="metadata"></video>
 
   <div class="privacy">
     <span class="tick">隱私</span>
@@ -256,7 +261,7 @@ createApp({
       srcName:"",
       dragOver:false, exporting:false,
       dims:"—", status:"先丟一支影片或一張圖進來。", progress:0,
-      warnings:[], resultUrl:"", resultKind:"",
+      warnings:[], resultUrl:"", resultKind:"", envWarn:"",
     };
   },
   computed:{
@@ -272,23 +277,42 @@ createApp({
     this._file=null; this._img=null; this._resultBlob=null;
     this._ffmpeg=null; this._ffLoaded=false;
     this._bandCv=document.createElement("canvas");
+    // App 內建瀏覽器（LINE / FB / IG…）常會擋選檔或存檔，主動提示
+    const ua=navigator.userAgent||"";
+    if(/Line\/|FBAN|FB_IAB|FBAV|Instagram|MicroMessenger|Twitter/i.test(ua)){
+      this.envWarn="你正在 App 的內建瀏覽器裡，選檔或存檔可能被限制。建議點選單改用 Safari / Chrome 開啟本頁。";
+    }
   },
   methods:{
     /* ---------- load media ---------- */
+    // 手機選檔（尤其 Android WebView）常拿不到 MIME type，要用副檔名補判斷
+    mediaKindOf(file){
+      const t=(file.type||"").toLowerCase();
+      if(t.startsWith("image")) return "image";
+      if(t.startsWith("video")) return "video";
+      const ext=(file.name.split(".").pop()||"").toLowerCase();
+      if(["jpg","jpeg","png","gif","webp","bmp","heic","heif","avif"].includes(ext)) return "image";
+      if(["mp4","mov","m4v","webm","mkv","avi","3gp","3g2","mts","m2ts"].includes(ext)) return "video";
+      return "";
+    },
     onPick(e){ const f=e.target.files[0]; if(f) this.loadMedia(f); e.target.value=""; },
     onDrop(e){
       this.dragOver=false;
       const f=e.dataTransfer.files[0];
-      if(f && (f.type.startsWith("video") || f.type.startsWith("image"))) this.loadMedia(f);
+      if(f && this.mediaKindOf(f)) this.loadMedia(f);
     },
     loadMedia(file){
       this.clearMedia();
+      const kind=this.mediaKindOf(file);
+      if(!kind){ this.status="這個檔案看不出是影片還是圖片，請選 mp4 / mov / webm / jpg / png。"; return; }
       this._file=file;
       this.srcName=file.name;
       const mb=file.size/1048576;
       const sizeTxt=mb<10 ? mb.toFixed(1) : String(Math.round(mb));
-      if(file.type.startsWith("image")){
+      if(kind==="image"){
+        this.status="讀取圖片中…";
         const img=new Image();
+        const url=URL.createObjectURL(file);
         img.onload=()=>{
           this._img=img;
           this._mw=img.naturalWidth; this._mh=img.naturalHeight;
@@ -297,12 +321,27 @@ createApp({
           this.status="按「輸出圖片」就完事。";
           this.$nextTick(()=>this.render());
         };
-        img.src=URL.createObjectURL(file);
+        img.onerror=()=>{
+          URL.revokeObjectURL(url);
+          this.status="這張圖讀不出來。若是 iPhone 的 HEIC 格式，這個瀏覽器可能不支援，請改用 JPG / PNG。";
+        };
+        img.src=url;
       }else{
+        this.status="讀取影片中…";
         const v=this.$refs.src;
-        v.src=URL.createObjectURL(file);
-        v.load();
+        const url=URL.createObjectURL(file);
+        let settled=false;
+        const fail=(msg)=>{
+          if(settled) return; settled=true;
+          URL.revokeObjectURL(url);
+          v.removeAttribute("src"); v.load();
+          this.status=msg;
+        };
+        const timer=setTimeout(()=>fail("影片讀取逾時，這個瀏覽器可能不支援它的格式；換一支試試，或改用 Safari / Chrome 開啟本頁。"),15000);
+        v.onerror=()=>{ clearTimeout(timer); fail("影片讀不出來（格式可能不支援）。換一支試試，或改用 Safari / Chrome 開啟本頁。"); };
         v.onloadedmetadata=()=>{
+          if(settled) return; settled=true;
+          clearTimeout(timer);
           // 強制偶數尺寸（h264 要求）
           this._mw=v.videoWidth - (v.videoWidth%2);
           this._mh=v.videoHeight - (v.videoHeight%2);
@@ -313,9 +352,11 @@ createApp({
           if(mb>150) this.warnings.push("檔案超過 150 MB，可能撞到瀏覽器記憶體上限；輸出失敗的話請先壓小。");
           this.status="按「輸出影片」就完事。";
           v.currentTime=Math.min(0.1, v.duration/2);
-          v.play().catch(()=>{});
+          v.play().catch(()=>{}); // iOS 低耗電模式會擋 muted 自動播放，擋了就停在第一格
           this.$nextTick(()=>this.render());
         };
+        v.src=url;
+        v.load();
       }
     },
     clearMedia(){
@@ -416,10 +457,14 @@ createApp({
       this.resultUrl=URL.createObjectURL(blob);
       this.resultKind="image";
     },
-    // 另存新檔：支援的瀏覽器跳「另存」對話框，否則退回一般下載（檔名照樣保留）
+    // 另存新檔，三層策略：
+    // 1) 桌面 Chromium：showSaveFilePicker 另存對話框
+    // 2) 手機（iOS 15+ / Android）：navigator.share 系統分享面板，可直接「儲存影片 / 圖片」進相簿
+    // 3) 其他：一般下載（檔名照樣保留）
     async saveResult(){
       if(!this._resultBlob) return;
       const isVid=this.resultKind==="video";
+      const mime=isVid ? "video/mp4" : "image/png";
       if(window.showSaveFilePicker){
         try{
           const handle=await window.showSaveFilePicker({
@@ -435,12 +480,28 @@ createApp({
           return;
         }catch(err){
           if(err && err.name==="AbortError") return; // 使用者按取消
-          // 其他錯誤（例如沙箱限制）退回一般下載
+          // 其他錯誤（例如沙箱限制）往下一層退
+        }
+      }
+      if(navigator.canShare){
+        try{
+          const f=new File([this._resultBlob], this.outName, {type:mime});
+          if(navigator.canShare({files:[f]})){
+            await navigator.share({files:[f], title:this.outName});
+            this.status="已開分享面板，選「儲存"+(isVid?"影片":"圖片")+"」就能存進相簿。";
+            return;
+          }
+        }catch(err){
+          if(err && err.name==="AbortError") return; // 使用者關掉分享面板
+          // 其他錯誤往下一層退
         }
       }
       const a=document.createElement("a");
       a.href=this.resultUrl; a.download=this.outName;
       document.body.appendChild(a); a.click(); a.remove();
+      this.status=isVid
+        ? "已開始下載 "+this.outName+"。"
+        : "已開始下載 "+this.outName+"；若沒反應，可直接長按上面的圖片儲存。";
     },
     async ensureFFmpeg(){
       if(this._ffLoaded) return;
