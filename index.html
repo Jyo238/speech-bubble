@@ -177,7 +177,6 @@ if (GA_ID) {
   .privacy b{color:var(--accent-ink)}
 
   /* ---- ad slots（廣告位佔位；貼上聯播網代碼後刪掉裡面的 span 即可） ---- */
-  .adslot{display:none} /* 暫時隱藏，要上廣告時刪掉這一行 */
   .adslot{
     border:3px dashed rgba(20,20,23,.30);background:rgba(255,255,255,.55);
     display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
@@ -188,6 +187,7 @@ if (GA_ID) {
   .ad-top{min-height:90px;margin-bottom:26px}
   .ad-side{min-height:250px;width:100%;max-width:300px;margin:24px auto 0}
   .ad-bottom{min-height:90px;margin-top:28px}
+  .adslot{display:none !important} /* 暫時隱藏；要上廣告時刪掉這一行（必須放在最後才蓋得過上面的 display:flex） */
 
   footer{margin-top:34px;font-size:12px;opacity:.6;text-align:center}
   footer a{color:inherit}
