@@ -8,6 +8,22 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<!-- Google Analytics（GA4）：把 GA_ID 換成你的評估 ID（G- 開頭），留空＝完全不載入 -->
+<script>
+const GA_ID = ""; // 例如 "G-AB12CD34EF"
+window.mbTrack = function(){};
+if (GA_ID) {
+  var gs = document.createElement("script");
+  gs.async = true;
+  gs.src = "https://www.googletagmanager.com/gtag/js?id=" + GA_ID;
+  document.head.appendChild(gs);
+  window.dataLayer = window.dataLayer || [];
+  window.gtag = function(){ dataLayer.push(arguments); };
+  gtag("js", new Date());
+  gtag("config", GA_ID);
+  window.mbTrack = function(name, params){ gtag("event", name, params || {}); };
+}
+</script>
 <style>
   :root{
     --ink:#141417;
@@ -349,6 +365,7 @@ createApp({
           this.mediaKind="image"; this.hasMedia=true;
           this.dims=`${this._mw}×${this._mh} · ${sizeTxt} MB`;
           this.status="按「輸出圖片」就完事。";
+          mbTrack("load_media",{kind:"image"});
           this.$nextTick(()=>this.render());
         };
         img.onerror=()=>{
@@ -381,6 +398,7 @@ createApp({
           if(v.duration>60) this.warnings.push("影片超過 60 秒，瀏覽器合成會比較久（可能要好幾分鐘），建議先剪短。");
           if(mb>150) this.warnings.push("檔案超過 150 MB，可能撞到瀏覽器記憶體上限；輸出失敗的話請先壓小。");
           this.status="按「輸出影片」就完事。";
+          mbTrack("load_media",{kind:"video"});
           v.currentTime=Math.min(0.1, v.duration/2);
           v.play().catch(()=>{}); // iOS 低耗電模式會擋 muted 自動播放，擋了就停在第一格
           this.$nextTick(()=>this.render());
@@ -468,6 +486,7 @@ createApp({
         if(this.mediaKind==="image") await this.exportImage();
         else await this.exportVideo();
         this.status="完成 ✓ 按下面的按鈕另存新檔。";
+        mbTrack("export",{kind:this.mediaKind});
       }catch(err){
         console.error(err);
         this.status="出錯了："+(err&&err.message||err)+"。若是在預覽框裡跑不動，部署到網路上（例如 Cloudflare Pages）就會正常。";
@@ -495,6 +514,7 @@ createApp({
       if(!this._resultBlob) return;
       const isVid=this.resultKind==="video";
       const mime=isVid ? "video/mp4" : "image/png";
+      mbTrack("save",{kind:this.resultKind});
       if(window.showSaveFilePicker){
         try{
           const handle=await window.showSaveFilePicker({
