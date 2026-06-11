@@ -4,7 +4,7 @@
 丟一支影片或一張圖進來，頂上自動壓一條漫畫對話框，輸出新檔，拿去發文。
 所有處理都在你的瀏覽器裡完成，**檔案不會上傳**。
 
-**線上版：https://speech-bubble-9d5.pages.dev**
+**線上版：https://speech-bubble-7ct.pages.dev**
 
 <img src="demo/mouthbubble.png" alt="輸出範例" width="340" />
 
